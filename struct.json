@@ -1,0 +1,54 @@
+// Описание доменов
+{
+	"domains" : [
+{
+  "domain": "biznessnolya.com",
+  "payDate": "14.05.2016",
+  "price" : 99,
+  "currency" : "rub",
+  "service" : "2domains.ru - Лобанов",
+  "comment": "No comments"
+}]
+}
+
+// Описание сервисов InTouch
+{
+	"intouch" : [
+{
+  "company": "BizneSSNOLЯ",
+  "payDate": "14.05.2016",
+  "price" : 16,
+  "currency" : "usd",
+  "activeUsers" : 1540,
+  "maxUsers" : 2500,
+  "comment": "No comments"
+}]
+}
+
+// WHMCS Modules
+
+{
+	"WHMCSModules" : [
+{
+  "company": "iWebAutomatic",
+  "payDate": "14.05.2016",
+  "price" : 22.2,
+  "currency" : "usd",
+  "licenseKey" : "Modules-db353f8485c4e73233",
+  "comment": "No comments"
+}]
+}
+
+
+// Все остальное (общее)
+{
+	"other" : [
+{
+  "serviceName": "Hosting",
+  "payDate": "14.05.2016",
+  "price" : 2147,
+  "currency" : "rub",
+  "importantMessage" : "None",
+  "comment": "No comments"
+}]
+}

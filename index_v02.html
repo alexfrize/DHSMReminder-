@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ru" ng-app="reminderApp">
+<head>
+	<meta charset="UTF-8">
+	<title>Программа напоминаний - V2 - Angular JS</title>
+	<link rel="stylesheet" href="css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="css/datepicker.css">
+
+	<script type="text/javascript" src="js/angular.js"></script>
+	<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+    <script src="js/bootstrap-datepicker.js"></script>
+	
+	<style>
+		.datepicker{z-index:1151 !important;}
+	</style>
+	<script type="text/javascript">
+		
+		// dataObj - массив объектов JSON, содержащий разные данные для каждой таблицы
+		var dataObj = [
+
+
+		// Описание доменов
+		{
+				"domains" : [
+			{
+			  "domain": "biznessnolya.com",
+			  "payDate": "14.05.2016",
+			  "price" : 99,
+			  "currency" : "rub",
+			  "service" : "2domains.ru - Лобанов",
+			  "comment": "No comments"
+			},
+			{
+			  "domain": "iwebautomatic.com",
+			  "payDate": "14.07.2016",
+			  "price" : 12,
+			  "currency" : "usd",
+			  "service" : "2domains.ru",
+			  "comment": "No comments"
+			},
+						{
+			  "domain": "newdomain.com",
+			  "payDate": "22.07.2016",
+			  "price" : 15,
+			  "currency" : "usd",
+			  "service" : "Now host :)",
+			  "comment": "No comments"
+			},
+			{
+			  "domain": "navigator4life.com",
+			  "payDate": "23.08.2016",
+			  "price" : 15,
+			  "currency" : "usd",
+			  "service" : "hosting.de",
+			  "comment": "No comments"
+			},
+						{
+			  "domain": "ollool.com",
+			  "payDate": "24.06.2016",
+			  "price" : 15,
+			  "currency" : "usd",
+			  "service" : "myhst.nfo",
+			  "comment": "No comments"
+			}
+			]
+		},
+
+		// Описание сервисов InTouch
+		{
+				"intouch" : [
+			{
+			  "company": "BizneSSNOLЯ",
+			  "payDate": "14.05.2016",
+			  "price" : 16,
+			  "currency" : "usd",
+			  "activeUsers" : 1540,
+			  "maxUsers" : 2500,
+			  "comment": "No comments"
+			}]
+		},
+
+		// ОБЪЕКТ WHMCS Modules
+
+		{
+			"WHMCSModules" : [
+
+			{
+				"company": "iWebAutomatic",
+				"payDate": "14.05.2016",
+				"price" : 22.2,
+				"currency" : "usd",
+				"licenseKey" : "Modules-db353f8485c4e73233",
+				"comment": "No comments"
+			},
+
+			{
+				"company": "Navigator4Life",
+				"payDate": "21.08.2016",
+				"price" : 22.2,
+				"currency" : "usd",
+				"licenseKey" : "Modules-db353f8485c4e73154",
+				"comment": "Don't forget"
+			}]
+		}, // окончание объекта "WHMCSModules"
+
+		// ОБЪЕКТ Все остальное (общее)
+		{
+				"other" : [
+			{
+				"serviceName": "Hosting",
+				"payDate": "14.05.2016",
+				"price" : 2147,
+				"currency" : "rub",
+				"importantMessage" : "None",
+				"comment": "No comments"
+			},
+
+			{
+				"serviceName": "PivotalTracker",
+				"payDate": "15.08.2016",
+				"price" : 35,
+				"currency" : "usd",
+				"importantMessage" : "None",
+				"comment" : "No comments"}]
+		} // Окончание объекта "other"
+
+	];
+
+
+		var reminderApp = angular.module("reminderApp", []);
+		reminderApp.controller("reminderCtrl", function($scope) {
+
+			const ALERT_IF_DAYS_LEFT = 14; // по умолчанию все уведомления будут высылаться, если осталось менее 14 дней
+
+			$scope.datatype = {	data : ["domains",
+										"intouch",
+										"WHMCSModules",
+										"other"],
+								selectedOption : "domains"};
+			$scope.tableData = dataObj;
+
+			$scope.objectToEdit = new Domain; // создаем новый объект для редактирования
+
+			// функция, которая получает обозначение валюты по строке текста
+			function getTXTByCurrency(txt) { 
+				switch(txt) {
+					case "usd" : return "Доллары (USD)";
+					case "rub" : return "Рубли (RUB)";
+					case "eur" : return "Евро (EUR)";
+					default : return "unknown";
+				}
+			}
+
+			/* Конструкторы объектов */
+			/* Конструктор создания нового объекта-домена для редактирования в окне */
+			function Domain(obj) {
+				var newObj = {};
+				if (!obj) { // возвращаем частично заполненный объект, если obj не задан
+					newObj = {
+								"domain" : "",
+								"payDate": "01.01.2016",
+								"price" : 0,
+								"currency" : "usd",
+								"service" : "",
+								"comment": "No comments"
+							}
+					newObj.isNew = true; // Сигнализирует о том, что созданный объект - новый
+					}
+				else { // иначе копируем данные из объекта-параметра
+					for (var prop in obj) {
+						if (obj.hasOwnProperty(prop)) {
+							newObj[prop] = obj[prop];
+						}
+					}
+					newObj.isNew = false;  // Сигнализирует о том, что созданный объект загружен для редактирования из существующего массива
+				}
+				newObj.currencyTXT = getTXTByCurrency(newObj.currency); // Дополнительное свойство: прописывает валюту строкой
+
+
+				console.log("newObj.isNew == " + newObj.isNew);
+				return newObj;
+			} // end of function Domain(obj) ...
+
+			
+			/* Конструктор объекта intouch для редактирования */
+			function Intouch(obj) {
+				var newObj = {};
+				if (!obj) { // если объект не задан, то мы заполняем новый объект частично
+					newObj = {
+								"company": "",
+								"payDate": "01.01.2016",
+								"price" : 0,
+								"currency" : "usd",
+								"activeUsers" : 0,
+								"maxUsers" : 1500,
+								"comment": "No comments"
+					}
+					newObj.isNew = true; // Сигнализирует о том, что созданный объект - новый
+				} 
+				else {
+					for (var prop in obj) {
+						if (obj.hasOwnProperty) {
+							newObj[prop] = obj[prop];
+						}
+					}
+					newObj.isNew = false;  // Сигнализирует о том, что созданный объект загружен для редактирования из существующего массива
+				} // end if..
+				newObj.currencyTXT = getTXTByCurrency(newObj.currency); // Дополнительное свойство: прописывает валюту строкой
+				return newObj;
+			} // end of function Intouch(obj) ...
+
+
+
+
+			/* Конструктор создания новой записи о модуле для WHMCS */
+			function WHMCSModule(obj) {
+				var newObj = {};
+				if (!obj) {
+					newObj = {
+								"company": "",
+								"payDate": "01.01.2016",
+								"price" : 0,
+								"currency" : "usd",
+								"licenseKey" : "",
+								"comment": "No comments"
+					}
+					newObj.isNew = true; // Сигнализирует о том, что созданный объект - новый
+				}
+				else
+				{
+					for (prop in obj) {
+						if (obj.hasOwnProperty(prop)) {
+							newObj[prop] = obj[prop];
+						}
+					}
+					newObj.isNew = false;  // Сигнализирует о том, что созданный объект загружен для редактирования из существующего массива
+				} // if (!obj) ...
+				newObj.currencyTXT = getTXTByCurrency(newObj.currency); // Дополнительное свойство: прописывает валюту строкой
+				return newObj;
+			} // end of function WHMCSModule(obj) ...
+
+			/* Конструктов прочих объектов для редактирование в таблице */
+			function Other(obj) {
+				var newObj = {};
+				if (!obj) {
+					newObj = {
+								"serviceName": "",
+								"payDate": "01.01.2016",
+								"price" : 0,
+								"currency" : "usd",
+								"importantMessage" : "None",
+								"comment": "No comments"
+					}
+					newObj.isNew = true; // Сигнализирует о том, что созданный объект - новый
+				} 
+				else
+				{
+					for (var prop in obj) {
+						if (obj.hasOwnProperty(prop)) {
+							newObj[prop] = obj[prop];
+						}
+					}
+					newObj.isNew = false;  // Сигнализирует о том, что созданный объект загружен для редактирования из существующего массива
+				} // end if (!obj) ...
+				newObj.currencyTXT = getTXTByCurrency(newObj.currency); // Дополнительное свойство: прописывает валюту строкой
+				return newObj;
+			} // end of function Other() ...
+
+
+			/* Функция загрузки нужной записи для редактирования в модальном окне */
+			// в функцию передается номер элемента массива index и тип редактируемого объекта objType в массиве
+			$scope.editRecord = function (index, objType) { 
+				var record;
+				switch (objType) {
+				case "domains": {
+						$scope.objectToEdit = new Domain($scope.tableData[0].domains[index]);
+						$scope.objectToEdit.index = index;
+						break;
+						}
+				case "intouch": {
+						$scope.objectToEdit = new Intouch($scope.tableData[1].intouch[index]);
+						$scope.objectToEdit.index = index;
+						break;
+						}
+				case "WHMCSModules": {
+						$scope.objectToEdit = new WHMCSModule($scope.tableData[2].WHMCSModules[index]);
+						$scope.objectToEdit.index = index;
+						break;
+						}
+				case "other": {
+						$scope.objectToEdit = new Other($scope.tableData[3].other[index]);
+						$scope.objectToEdit.index = index;	
+						break;
+						}
+
+				} // end switch
+
+				$("#modalEditRecord").modal('toggle');
+				return 0;
+			} // $scope.editRecord ...
+			
+
+			/* Функция создания нового объекта для редактирования. Тип объекта передается в качестве параметра */
+			$scope.createRecord = function (objType) {
+				var record;
+				switch (objType) {
+				case "domains": {
+						$scope.objectToEdit = new Domain();
+						break;
+						}
+				case "intouch": {
+						$scope.objectToEdit = new Intouch();
+						break;
+						}
+				case "WHMCSModules": {
+						$scope.objectToEdit = new WHMCSModule();
+						break;
+						}
+				case "other": {
+						$scope.objectToEdit = new Other();
+						break;
+						}
+
+				} // end switch
+				console.log(objType);
+				$("#modalEditRecord").modal('toggle');
+			} // $scope.createRecord 
+
+			/* 	Функция, которая сохраняет данные при нажатии на соответствующую кнопку во всплывающем окне
+				В случае, когда $scope.objectToEdit.isNew == true - это означает, что создается новый объект, то есть его нужно
+				добавить в массив.
+				Если же объект не новый, а редактируется, то в массив нужно сохранить объект под тем же номером элемента, где он и был */
+			$scope.saveRecord = function (recordType) {
+				$('#modalEditRecord').modal('toggle'); // Закрываем окно (оно сейчас открыто, т.к. saveRecord() вызывается только при нажатии на кнопку "Создать")
+				console.log ("--*-*-*-**-*-*-*-*-*-");
+				console.log (recordType);
+				console.log($scope.objectToEdit.isNew);
+				var objectToSave = {};
+
+				switch (recordType) {
+					case "domains" :
+						objectToSave = {
+							  "domain": $scope.objectToEdit.domain,
+							  "payDate": $scope.objectToEdit.payDate,
+							  "price" : $scope.objectToEdit.price,
+							  "currency" : $scope.objectToEdit.currency,
+							  "service" : $scope.objectToEdit.service,
+							  "comment": $scope.objectToEdit.comment
+							}
+							
+						if ($scope.objectToEdit.isNew) { // проверяем по глобальному свойству объекта, редактируемого в данный момент, новый ли он
+							$scope.tableData[0].domains.push(objectToSave);
+						}
+						else {
+							console.log("HERE!");
+							console.log("objectToEdit.index");
+							console.log($scope.tableData[0].domains[$scope.objectToEdit.index]);
+							$scope.tableData[0].domains.splice($scope.objectToEdit.index, 1, objectToSave); 
+						}	
+											
+					break;
+
+					case "intouch" :
+						objectToSave = {
+							  "company": $scope.objectToEdit.company,
+							  "payDate": $scope.objectToEdit.payDate,
+							  "price" : $scope.objectToEdit.price,
+							  "currency" : $scope.objectToEdit.currency,
+							  "activeUsers" : $scope.objectToEdit.activeUsers,
+							  "maxUsers" : $scope.objectToEdit.maxUsers,
+							  "comment": $scope.objectToEdit.comment
+							}
+
+						if ($scope.objectToEdit.isNew) { // проверяем по глобальному свойству объекта, редактируемого в данный момент, новый ли он
+							$scope.tableData[1].intouch.push(objectToSave);
+						}
+						else {
+							console.log("HERE!");
+							console.log("objectToEdit.index");
+							console.log($scope.tableData[0].domains[$scope.objectToEdit.index]);
+							$scope.tableData[1].intouch.splice($scope.objectToEdit.index, 1, objectToSave); 
+						}	
+					break;
+
+					case "WHMCSModules" : 
+						objectToSave = {
+								"company": $scope.objectToEdit.company,
+								"payDate": $scope.objectToEdit.payDate,
+								"price" : $scope.objectToEdit.price,
+								"currency" : $scope.objectToEdit.currency,
+								"licenseKey" : $scope.objectToEdit.licenseKey,
+								"comment": $scope.objectToEdit.comment
+							}
+						if ($scope.objectToEdit.isNew) { // проверяем по глобальному свойству объекта, редактируемого в данный момент, новый ли он
+							$scope.tableData[2].WHMCSModules.push(objectToSave);
+						}
+						else {
+							console.log("HERE!");
+							console.log("objectToEdit.index");
+							console.log($scope.tableData[2].WHMCSModules[$scope.objectToEdit.index]);
+							$scope.tableData[2].WHMCSModules.splice($scope.objectToEdit.index, 1, objectToSave); 
+						}								
+					break;
+
+					case "other" :
+						objectToSave = {
+								"serviceName": $scope.objectToEdit.serviceName,
+								"payDate": $scope.objectToEdit.payDate,
+								"price" : $scope.objectToEdit.price,
+								"currency" : $scope.objectToEdit.currency,
+								"importantMessage" : $scope.objectToEdit.importantMessage,
+								"comment": $scope.objectToEdit.comment
+							}
+
+						if ($scope.objectToEdit.isNew) { // проверяем по глобальному свойству объекта, редактируемого в данный момент, новый ли он
+							$scope.tableData[3].other.push(objectToSave);
+						}
+						else {
+							console.log("HERE!");
+							console.log("objectToEdit.index");
+							console.log($scope.tableData[3].other[$scope.objectToEdit.index]);
+							$scope.tableData[3].other.splice($scope.objectToEdit.index, 1, objectToSave); 
+						}	
+					break;
+
+				} // end of switch (recordType) ...
+
+				console.log ($scope.objectToEdit.index);
+
+			} // end of $scope.saveRecord ...
+
+			/* 	Функция, извлекающая данные из объекта date, которые были переданы из объекта jQuery datepicker.
+				Данная функция присваевает в модели редактируемому свойству objectToEdit.payDate строку с выбранной датой,
+				чтобы можно было оперировать этими данными через Angular JS.
+			*/
+			$scope.extractDate = function(date) {
+				console.log("$scope.extractDate reports: " + date);
+				console.log(date);
+				console.log(date.date.getFullYear());
+				console.log(date.date.getMonth());
+				console.log(date.date.getDate());
+				var month = date.date.getMonth()+1;
+				var day = date.date.getDate();
+				var year = date.date.getFullYear();
+
+				$scope.objectToEdit.payDate  = ((day <= 9) ? "0"+day : day ) + "." + (month <= 9 ? "0"+month : month) + "." + year;
+			}
+
+
+			/* 	Функция, возвращающая строку с количеством лет, месяцев и дней до окончания срока оплаты 
+				Данная функция возвращает объект, состоящий из двух свойств - строки с описанием, сколько осталось лет, месяцев и дней,
+				а также классом, чтобы ячейка таблицы окрасилась в нужный цвет */
+			$scope.timeLeft = function(payDate) {
+					var daysInMonth = [31,29,31,30,31,30,31,31,30,31,30,31];
+					var timeLeftString = {
+											txt : "",
+											cellClass : ""
+										 };
+					var outOfDate = {
+										txt : "Платеж просрочен!",
+										cellClass : "danger"
+									};
+					var currentDate = new Date();
+					var payDateGetDate = payDate.substr(0,2) * 1;
+					var payDateGetMonth = payDate.substr(3,2) * 1 - 1; // т.к. в JS нумерация месяцев начинается с нуля, а в таблице она должна быть с 1
+					var payDateGetFullYear = payDate.substr(6,4) * 1;
+					var yearsLeft, monthsLeft, daysLeft;
+					// Проверяем, сколько лет, месяцев и дней осталось до окончания
+					yearsLeft = payDateGetFullYear - currentDate.getFullYear();
+					monthsLeft = payDateGetMonth - currentDate.getMonth();
+					daysLeft = payDateGetDate - currentDate.getDate();
+					if (yearsLeft < 0) {
+						return outOfDate;
+					}
+					else if (yearsLeft) {
+						timeLeftString.txt += yearsLeft + " лет ";
+					}
+	
+					if ((monthsLeft < 0) && (!yearsLeft)) {
+						return outOfDate;
+					}
+					// else if (monthsLeft) {
+					// 	timeLeftString.txt += monthsLeft + " месяцев ";
+					// }
+
+					if ((daysLeft < 0) && (!monthsLeft) && (!yearsLeft)) {
+						return outOfDate;
+					}
+
+					if (daysLeft < 0) {
+						daysLeft = daysInMonth[currentDate.getMonth()] - currentDate.getDate() + payDateGetDate;
+						monthsLeft--; // декрементируем оставшееся количество месяцев
+
+					}
+
+
+					if (monthsLeft) {
+						timeLeftString.txt += monthsLeft + " месяцев ";
+					}
+					timeLeftString.txt += daysLeft + " дней";
+					return timeLeftString;
+
+				} // end of function timeLeft(payDate) ...
+	
+
+
+			}); // end of 	reminderApp.controller ... -------------------------------------------------------------------------
+
+		
+	</script>
+</head>
+
+<body ng-controller="reminderCtrl">
+	<section class="container">
+	<div class="row">
+
+		<select ng-options="item for item in datatype.data" ng-model="datatype.selectedOption"></select>
+		<!-- Рисуем таблицу в зависимости от того, что выбрано -->
+			<div ng-switch="datatype.selectedOption">
+
+		<!-- НАЧАЛО БЛОКА "domains" - Домены -->
+
+				<div ng-switch-when="domains"> 
+					<h2>Домены</h2>
+					<table class="table table-striped">
+						<tbody>
+							<tr>
+								<th>Имя домена</th>
+								<th>Дата след. оплаты</th>
+								<th>Осталось до оплаты</th>
+								<th>Сумма</th>
+								<th>Валюта</th>
+								<th>Обслуживающий сервис</th>
+								<th>Комментарий</th>
+								<th></th>
+								<th></th>
+							</tr>
+							<tr ng-repeat="property in tableData[0].domains"> <!-- Указываем индекс -->
+								<td>{{property.domain}}</td>
+								<td ng-class="timeLeft(property.payDate).cellClass">{{property.payDate}}</td>
+								<td ng-class="timeLeft(property.payDate).cellClass">{{timeLeft(property.payDate).txt}}</td>
+								<td>{{property.price}}</td>
+								<td>{{property.currency}}</td>
+								<td>{{property.service}}</td>
+								<td>{{property.comment}}</td>
+								<td><button ng-click="editRecord($index, 'domains')" class="btn btn-info"> <i class="glyphicon glyphicon-pencil"></i></button></td>
+								<td class="text-center"><button class="btn btn-danger"> <i class="glyphicon glyphicon-remove"></i></button></td>
+							</tr>
+
+						</tbody>
+					</table>
+			</div> <!-- ОКОНЧАНИЕ БЛОКА  "domains" - Домены  -->		
+
+
+		<!-- НАЧАЛО БЛОКА "intouch" - Рассыльщики InTouch -->
+
+				<div ng-switch-when="intouch"> 
+					<h2>Рассыльщики InTouch</h2>
+					<table class="table table-striped">
+						<tbody>
+							<tr>
+								<th>Компания (система)</th>
+								<th>Дата след. оплаты</th>
+								<th>Осталось до оплаты</th>
+								<th>Сумма</th>
+								<th>Валюта</th>
+								<th>Активных пользователей</th>
+								<th>Всего пользователей</th>
+								<th>Комментарий</th>
+								<th></th>
+								<th></th>
+							</tr>
+							<tr ng-repeat="property in tableData[1].intouch"> <!-- Указываем индекс -->
+								<td>{{property.company}}</td>
+								<td ng-class="timeLeft(property.payDate).cellClass">{{property.payDate}}</td>
+								<td ng-class="timeLeft(property.payDate).cellClass">{{timeLeft(property.payDate).txt}}</td>								
+								<td>{{property.price}}</td>
+								<td>{{property.currency}}</td>
+								<td>{{property.activeUsers}}</td>
+								<td>{{property.maxUsers}}</td>
+								<td>{{property.comment}}</td>
+								<td><button ng-click="editRecord($index, 'intouch')" class="btn btn-info"> <i class="glyphicon glyphicon-pencil"></i></button></td>
+								<td class="text-center"><button class="btn btn-danger"> <i class="glyphicon glyphicon-remove"></i></button></td>
+							</tr>
+
+						</tbody>
+					</table>
+			</div> <!-- ОКОНЧАНИЕ БЛОКА "intouch" - Рассыльщики InTouch -->				
+
+		<!-- НАЧАЛО БЛОКА "WHMCSModules" - Модули WHMCS -->
+
+				<div ng-switch-when="WHMCSModules"> 
+					<h2>Всевозможные модули для WHMCS</h2>
+					<table class="table table-striped">
+						<tbody>
+							<tr>
+								<th>Компания (система)</th>
+								<th>Дата след. оплаты</th>
+								<th>Осталось до оплаты</th>
+								<th>Сумма</th>
+								<th>Валюта</th>
+								<th>Ключ лицензии WHMCS</th>
+								<th>Комментарий</th>
+								<th></th>
+								<th></th>
+							</tr>
+							<tr ng-repeat="property in tableData[2].WHMCSModules"> <!-- Указываем индекс -->
+								<td>{{property.company}}</td>
+								<td ng-class="timeLeft(property.payDate).cellClass">{{property.payDate}}</td>
+								<td ng-class="timeLeft(property.payDate).cellClass">{{timeLeft(property.payDate).txt}}</td>
+								<td>{{property.price}}</td>
+								<td>{{property.currency}}</td>
+								<td>{{property.licenseKey}}</td>
+								<td>{{property.comment}}</td>
+								<td><button ng-click="editRecord($index, 'WHMCSModules')" class="btn btn-info"> <i class="glyphicon glyphicon-pencil"></i></button></td>
+								<td class="text-center"><button class="btn btn-danger"> <i class="glyphicon glyphicon-remove"></i></button></td>
+							</tr>
+
+						</tbody>
+					</table>
+			</div> <!-- НАЧАЛО БЛОКА "WHMCSModules" - Модули WHMCS -->
+	
+				<!-- НАЧАЛО БЛОКА "other" - Другие сервисы -->
+
+				<div ng-switch-when="other"> 
+					<h2>Все остальные сервисы и услуги</h2>
+					<table class="table table-striped">
+						<tbody>
+							<tr>
+								<th>Название сервиса</th>
+								<th>Дата след. оплаты</th>
+								<th>Осталось до оплаты</th>
+								<th>Сумма</th>
+								<th>Валюта</th>
+								<th>Важное сообщение</th>
+								<th>Комментарий</th>
+								<th></th>
+								<th></th>
+							</tr>
+							<tr ng-repeat="property in tableData[3].other"> <!-- Указываем индекс -->
+								<td>{{property.serviceName}}</td>
+								<td ng-class="timeLeft(property.payDate).cellClass">{{property.payDate}}</td>
+								<td ng-class="timeLeft(property.payDate).cellClass">{{timeLeft(property.payDate).txt}}</td>
+								<td>{{property.price}}</td>
+								<td>{{property.currency}}</td>
+								<td>{{property.importantMessage}}</td>
+								<td>{{property.comment}}</td>
+								<td><button ng-click="editRecord($index, 'other')" class="btn btn-info"> <i class="glyphicon glyphicon-pencil"></i></button></td>
+								<td class="text-center"><button class="btn btn-danger"> <i class="glyphicon glyphicon-remove"></i></button></td>
+							</tr>
+
+						</tbody>
+					</table>
+			</div> <!-- ОКОНЧАНИЕ БЛОКА - "other" - Другие сервисы -->
+		</div>
+	</section>
+	<section class="container">
+		<section class="row">
+			<button class="btn btn-primary" ng-click="createRecord(datatype.selectedOption)">Создать новую запись</button>
+
+			<!-- Здесь находятся модальные окна для редактирования информации -->
+			<div class="modal fade" id="modalEditRecord">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button class="close" data-dismiss="modal">&times;</button>
+							<h4 class="modal-title" ng-if="!objectToEdit.isNew">Редактировать запись</h4>
+							<h4 class="modal-title" ng-if="objectToEdit.isNew">Создать запись</h4>
+						</div>
+						<div class="modal-body">
+							<!-- Генерация основной формы -->
+							<!-- Данная форма открывается только если выбрана вкладка 'domains' -->
+							<form ng-if="datatype.selectedOption == 'domains'">  <!-- begin form ... -->
+								<div class="form-group">
+									<label>Введите имя домена</label>
+									<input class="form-control" ng-model="objectToEdit.domain">
+								</div>
+								<div class="form-group">
+									<label>Дата след. оплаты</label>
+									<input class="form-control" id="datepicker" ng-model="objectToEdit.payDate">
+								</div>
+								<div class="form-group">
+									<label>Цена (сумма)</label>
+									<input class="form-control" ng-model="objectToEdit.price">
+								</div>
+								<div class="form-group">
+									<label>Укажите валюту, в которой производятся расчеты</label>
+									<select id="currencyEd" class="form-control" ng-model="objectToEdit.currencyTXT">
+											<option>Рубли (RUB)</option>
+											<option>Доллары (USD)</option>
+											<option>Евро (EUR)</option>
+									</select>
+								</div>
+								<div class="form-group">
+									<label>Обслуживающий сервис (Название регистратора домена)</label>
+									<input class="form-control" ng-model="objectToEdit.service">
+								</div>
+
+								<div class="form-group">
+									<label>Комментарий</label>
+									<input class="form-control" ng-model="objectToEdit.comment">
+								</div>
+							</form> <!-- end form ... -->
+
+
+
+							<!-- Данная форма открывается только если выбрана вкладка 'intouch' -->
+							<form ng-if="datatype.selectedOption == 'intouch'">  <!-- begin form ... -->
+								<div class="form-group">
+									<label>Введите название компании</label>
+									<input class="form-control" ng-model="objectToEdit.company">
+								</div>
+								<div class="form-group">
+									<label>Дата след. оплаты</label>
+									<input class="form-control" ng-model="objectToEdit.payDate">
+								</div>
+								<div class="form-group">
+									<label>Цена (сумма)</label>
+									<input class="form-control" ng-model="objectToEdit.price">
+								</div>
+								<div class="form-group">
+									<label>Укажите валюту, в которой производятся расчеты</label>
+									<select id="currencyEd" class="form-control" ng-model="objectToEdit.currencyTXT">
+											<option>Рубли (RUB)</option>
+											<option>Доллары (USD)</option>
+											<option>Евро (EUR)</option>
+									</select>
+								</div>
+								<div class="form-group">
+									<label>Укажите количество активных пользователей</label>
+									<input class="form-control" ng-model="objectToEdit.activeUsers">
+								</div>
+
+								<div class="form-group">
+									<label>Укажите максимальное количество пользователей для текущего тарифа</label>
+									<input class="form-control" ng-model="objectToEdit.maxUsers">
+								</div>
+
+
+								<div class="form-group">
+									<label>Комментарий</label>
+									<input class="form-control" ng-model="objectToEdit.comment">
+								</div>
+							</form> <!-- end form ... -->
+
+
+
+							<!-- Данная форма открывается только если выбрана вкладка 'WHMCSModules' -->
+							<form ng-if="datatype.selectedOption == 'WHMCSModules'">  <!-- begin form ... -->
+								<div class="form-group">
+									<label>Введите название компании</label>
+									<input class="form-control" ng-model="objectToEdit.company">
+								</div>
+								<div class="form-group">
+									<label>Дата след. оплаты</label>
+									<input class="form-control" ng-model="objectToEdit.payDate">
+								</div>
+								<div class="form-group">
+									<label>Цена (сумма)</label>
+									<input class="form-control" ng-model="objectToEdit.price">
+								</div>
+								<div class="form-group">
+									<label>Укажите валюту, в которой производятся расчеты</label>
+									<select id="currencyEd" class="form-control" ng-model="objectToEdit.currencyTXT">
+											<option>Рубли (RUB)</option>
+											<option>Доллары (USD)</option>
+											<option>Евро (EUR)</option>
+									</select>
+								</div>
+								<div class="form-group">
+									<label>Введите лицензионный ключ</label>
+									<input class="form-control" ng-model="objectToEdit.licenseKey">
+								</div>
+
+								<div class="form-group">
+									<label>Комментарий</label>
+									<input class="form-control" ng-model="objectToEdit.comment">
+								</div>
+							</form> <!-- end form ... -->
+
+
+
+
+							<!-- Данная форма открывается только если выбрана вкладка 'other' -->
+							<form ng-if="datatype.selectedOption == 'other'">  <!-- begin form ... -->
+								<div class="form-group">
+									<label>Введите название компании</label>
+									<input class="form-control" ng-model="objectToEdit.serviceName">
+								</div>
+								<div class="form-group">
+									<label>Дата след. оплаты</label>
+									<input class="form-control" ng-model="objectToEdit.payDate">
+								</div>
+								<div class="form-group">
+									<label>Цена (сумма)</label>
+									<input class="form-control" ng-model="objectToEdit.price">
+								</div>
+								<div class="form-group">
+									<label>Укажите валюту, в которой производятся расчеты</label>
+									<select id="currencyEd" class="form-control" ng-model="objectToEdit.currencyTXT">
+											<option>Рубли (RUB)</option>
+											<option>Доллары (USD)</option>
+											<option>Евро (EUR)</option>
+									</select>
+								</div>
+								<div class="form-group">
+									<label>Введите важное сообщение (если это необходимо)</label>
+									<input class="form-control" ng-model="objectToEdit.importantMessage">
+								</div>
+
+								<div class="form-group">
+									<label>Комментарий</label>
+									<input class="form-control" ng-model="objectToEdit.comment">
+								</div>
+							</form> <!-- end form ... -->
+
+
+
+
+
+						</div>
+						<div class="modal-footer">
+							<button class="btn btn-success" ng-click="saveRecord(datatype.selectedOption)">Сохранить</button>
+							<button class="btn btn-danger" data-dismiss="modal">Закрыть</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+	</section>	
+	<!-- Функция обработки datepicker во всплывающем окне -->
+	<script type="text/javascript">
+		$(document).ready(function() {
+			$('#datepicker').datepicker({format: "dd.mm.yyyy"}).on("changeDate", function(e){
+		     	var element = angular.element($('#datepicker'));
+		     	var scope = element.scope();
+		     	scope.$apply(function() {
+		     		scope.extractDate(e); // передаем в scope объект для обрабтки в модели
+		     	});
+		    });
+
+		});
+	</script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+{"domains" : [
+{
+  "domain": "biznessnolya.com",
+  "payDate": "14.05.2016",
+  "price" : 99,
+  "currency" : "rub",
+  "service" : "2domains.ru - Лобанов",
+  "comment": "No comments"
+},
+
+{
+  "domain": "biznessnolya.biz",
+  "payDate": "14.05.2016",
+  "price" : 99,
+  "currency" : "rub",
+  "service" : "2domains.ru - Лобанов",
+  "comment": "No comments"
+},
+
+
+{
+  "domain": "synergyways.com",
+  "payDate": "17.10.2016",
+  "price" : 99,
+  "currency" : "rub",
+  "service" : "2domains.ru",
+  "comment": "No comments"
+},
+
+{
+  "domain": "synergyways.ru",
+  "payDate": "17.10.2016",
+  "price" : 99,
+  "currency" : "rub",
+  "service" : "2domains.ru",
+  "comment": "No comments"
+},
+
+{
+  "domain": "navigator4life.com",
+  "payDate": "25.08.2016",
+  "price" : 99,
+  "currency" : "rub",
+  "service" : "namecheap.com",
+  "comment": "No comments"
+},
+
+{
+  "domain": "altautomatic.com",
+  "payDate": "28.09.2016",
+  "price" : 8,
+  "currency" : "$",
+  "service" : "InWeb24",
+  "comment": "No comments"
+},
+
+
+{
+  "domain": "iwebautomatic.com",
+  "payDate": "12.10.2016",
+  "price" : 99,
+  "currency" : "rub",
+  "service" : "2domains.ru",
+  "comment": "No comments"
+},
+
+{
+  "domain": "iwebautomatic.ru",
+  "payDate": "12.10.2016",
+  "price" : 99,
+  "currency" : "rub",
+  "service" : "2domains.ru",
+  "comment": "No comments"
+},
+
+{
+  "domain": "1automatic.com",
+  "payDate": "03.06.2016",
+  "price" : 99,
+  "currency" : "rub",
+  "service" : "2domains.ru",
+  "comment": "No comments"
+},
+
+{
+  "domain": "1automatic.ru",
+  "payDate": "03.06.2016",
+  "price" : 99,
+  "currency" : "rub",
+  "service" : "2domains.ru",
+  "comment": "No comments"
+},
+
+{
+  "domain": "1automaticpro.ru",
+  "payDate": "03.06.2016",
+  "price" : 99,
+  "currency" : "rub",
+  "service" : "2domains.ru",
+  "comment": "No comments"
+}
+
+]}

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="UTF-8">
+	<title>Программа напоминаний</title>
+	<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="css/datepicker.css">
+	<style>
+		.datepicker{z-index:1151 !important;}
+		.smallButton {
+			width: 30px;
+			height: 30px;
+		}
+		.smallIcon {
+			width: 10px;
+			height: 10px;
+			margin-left: -5px;
+		}
+	</style>
+		<!-- Bootstrap and jQuery -->
+	<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/bootstrap-datepicker.js"></script>
+
+</head>
+<body>
+
+	<p id="textP"></p>
+	<script type="text/javascript">
+		const ALERT_IF_DAYS_LEFT = 14; // по умолчанию все уведомления будут высылаться, если осталось менее 14 дней
+		var items; // Сразу определяем items как глобальную переменную, куда будет загружаться информация из JSON
+		
+		/* ------------------ ФУНКЦИЯ ЗАГРУЗКИ И ФОРМИРОВАНИЯ ТАБЛИЦЫ ------------------*/
+		function loadJSON() {
+			var data = new XMLHttpRequest();
+			data.open("GET", "data.json");
+			data.onreadystatechange = function() {
+				if ((data.readyState===4) && (data.status===200)) {
+					/* Функция проверки того, близка ли дата окончания регистрации домена (как параметр передается строка с датой из таблицы в формате ДД.ММ.ГГГГ */
+					function checkPayDate(payDate) {
+						var currentDate = new Date();
+						console.log("-------------\n");
+						var payDateGetDate = payDate.substr(0,2) * 1;
+						var payDateGetMonth = payDate.substr(3,2) * 1 - 1; // т.к. в JS нумерация месяцев начинается с нуля, а в таблице она должна быть с 1
+						var payDateGetFullYear = payDate.substr(6,4) * 1;
+						console.log("текущая дата: " + currentDate + "\nдата в таблице" + payDate);
+						console.log("тек день: " + currentDate.getDate() + "\nдень в табл:" + payDateGetDate);
+						console.log("тек месяц: " + currentDate.getMonth() + "\nмесяц в табл:" + payDateGetMonth);
+						console.log("тек год: " + currentDate.getFullYear() + "\nгод в табл:" + payDateGetFullYear);
+						console.log("-------------\n");
+					
+						if ((payDateGetFullYear - currentDate.getFullYear() === 0) && ((payDateGetMonth - currentDate.getMonth()) === 0)
+							 && (payDateGetDate - currentDate.getDate() <= ALERT_IF_DAYS_LEFT)) {
+								console.log("СРОЧНО ОПЛАТИТЬ!");
+								return true; // Возвращаем true как флаг того, что нужно срочно оплачивать!
+							} else
+							{
+								console.log("Все ok");
+								return false;
+							}
+						
+					} // function checkPayDate(payDate)...
+
+					/* функция, определяющая, сколько лет, месяцев и дней осталось до окончания оплаты */
+					function timeLeft(payDate) {
+						var daysInMonth = [31,29,31,30,31,30,31,31,30,31,30,31];
+						var timeLeftString = "",
+						outOfDate = "<span style='color: red; font-weight: bold;'>Платеж просрочен!</span>";
+						var currentDate = new Date();
+						console.log("-------------\n");
+						var payDateGetDate = payDate.substr(0,2) * 1;
+						var payDateGetMonth = payDate.substr(3,2) * 1 - 1; // т.к. в JS нумерация месяцев начинается с нуля, а в таблице она должна быть с 1
+						var payDateGetFullYear = payDate.substr(6,4) * 1;
+						var yearsLeft, monthsLeft, daysLeft;
+						// Проверяем, сколько лет осталось до окончания
+						yearsLeft = payDateGetFullYear - currentDate.getFullYear();
+						monthsLeft = payDateGetMonth - currentDate.getMonth();
+						daysLeft = payDateGetDate - currentDate.getDate();
+						if (yearsLeft < 0) {
+							return outOfDate;
+						}
+						else if (yearsLeft) {
+							timeLeftString += yearsLeft + " лет ";
+						}
+
+						if ((monthsLeft < 0) && (!yearsLeft)) {
+							return outOfDate;
+						}
+						else if (monthsLeft) {
+							timeLeftString += monthsLeft + " месяцев ";
+						}
+
+						if ((daysLeft < 0) && (!monthsLeft) && (!yearsLeft)) {
+							return outOfDate;
+						}
+
+
+						console.log('--------');
+						console.log('(до) daysLeft=' + daysLeft);
+						if (daysLeft < 0) {
+							daysLeft = daysInMonth[currentDate.getMonth()] - currentDate.getDate() + payDateGetDate; // пока что ставим, что кол-во дней в месяце=30, но исправим!
+							console.log("daysLeft =" + daysLeft + "daysInMonth[currentDate.getMonth()]=" + daysInMonth[currentDate.getMonth()] + " - currentDate.getDate() =" + currentDate.getDate() + " payDateGetDate =" + payDateGetDate);
+						}
+
+						timeLeftString += daysLeft + " дней";
+
+					console.log("yearsLeft = " + yearsLeft + "monthsLeft = " + monthsLeft + "   " + "daysLeft =" + daysLeft + " " +payDateGetDate + " " + currentDate.getDate());
+						return timeLeftString;
+
+					} // end of function timeLeft(payDate) ...
+
+					
+					items = JSON.parse(data.responseText);
+					var htmlData = "<h2>Таблица доменов</h2><table class='table table-bordered table-hover'><tbody>";
+					var tableHeader = "<tr><th>Имя домена</th><th>Дата след. оплаты</th><th>Осталось до оплаты</th><th>Цена</th><th>Валюта</th><th>Обслуживающий сервис</th><th>Комментарий</th><th>Редактировать</th></tr>";
+					htmlData += tableHeader;
+					for (var i= 0; i<items.domains.length; i++) {
+						htmlData +=	"<tr>";
+						htmlData += "<td>" + items.domains[i].domain + "</td>";
+						
+						if (checkPayDate(items.domains[i].payDate)) {
+							htmlData +=	"<td style='color: red; font-weight: bold;'>" + items.domains[i].payDate + "</td>"; // выводим сроку красным, чтобы привлечь внимание
+						}
+						else
+							htmlData +=	"<td>" + items.domains[i].payDate + "</td>"; // выводим обычную строку
+						
+						htmlData +=	"<td>" + timeLeft(items.domains[i].payDate) + "</td>";
+						htmlData +=	"<td>" + items.domains[i].price + "</td>";
+						htmlData +=	"<td>" + items.domains[i].currency + "</td>";
+						htmlData +=	"<td>" + items.domains[i].service + "</td>";
+						htmlData +=	"<td>" + items.domains[i].comment + "</td>";
+						htmlData +=	"<td><button class='btn btn-info smallButton' data-toggle='modal' data-target='#modalEditExistingRecord'><span class='glyphicon glyphicon-pencil smallIcon' aria-hidden='true'></span></button></td>";
+
+						htmlData +=	"</tr>";
+						
+					}
+					htmlData += "</tbody></table>";	
+
+					document.getElementById("mainInfo").innerHTML = htmlData;
+					//document.body.innerHTML = htmlData;
+					
+					
+				}
+			}
+			data.send();
+		}
+
+	/* ------------------ ФУНКЦИЯ ДОБАВЛЕНИЯ НОВОГО ЭЛЕМЕНТА В ТАБЛИЦУ  ------------------*/
+		function addNewRecord() {
+
+			var newDomainRecord = {
+				  domain: document.getElementById("domainName").value,
+				  payDate: document.getElementById("paymentDate").value,
+				  price: document.getElementById("price").value,
+				  currency: document.getElementById("currency").options[document.getElementById("currency").selectedIndex].value,
+				  service: document.getElementById("service").value,
+				  comment: document.getElementById("comment").value
+			}; 
+		
+			console.log(newDomainRecord);
+
+		}	// newDomainRecord //
+
+		
+		/* Проверка формы */
+		function validateForm(frmObj) {
+			var formIsCorrect = true;
+			var inputField = frmObj.getElementsByTagName('input');
+			for (var i=0; i<inputField.length; i++) {
+				if ((inputField[i].value == "") && (inputField[i].getAttribute('data-required') == "true")) {
+					inputField[i].style = "background: #d9534f;";
+					formIsCorrect = false; // найдена ошибка при валидаци формы
+				}
+			}
+
+			// Теперь протестируем каждое поле на корректность ввода данных
+			// Сначала проверим корректность ввода даты
+			inputField = document.getElementById('paymentDate');
+			var dateMatch = new RegExp("^(0[1-9]|[12][0-9]|3[01])[-.](0[1-9]|1[012])[-.](19|20)\\d\\d$"); // день-месяц-год, то есть по-российским стандартам
+				if (!dateMatch.test(inputField.value)) {
+					console.log("date " + inputField.value + " is NOT valid");
+					inputField.style = "background: #d9534f;";
+					formIsCorrect = false;
+				}
+
+			//Теперь проверим корректность ввода данных о цене
+			inputField = document.getElementById('price');
+			var priceMatch = new RegExp("^\\d+\\d{0}$");
+				if (!priceMatch.test(inputField.value)) {
+					console.log("price " + inputField.value + " is NOT a digit value");
+					inputField.style = "background: #d9534f;";
+					formIsCorrect = false;
+				}
+			if (formIsCorrect) {
+				$("#modalAddNewRecord").modal('hide');
+				console.log("should be hidden");
+			}
+			return formIsCorrect;
+		} // validateForm(frmObj)..
+
+	</script>
+
+
+	<!-- +++++++++++++ Модальные окна +++++++++++++ -->
+<script>
+	function generateEmptyForm() {
+		$('#frmNewDomain').show();
+	}
+</script>
+	<!-- +++++++++++++++++++++++++++++++++++++++++++++ ОКНО ДОБАВЛЕНИЯ НОВОЙ ЗАПИСИ +++++++++++++++++++++++++++++++++++++++++ -->
+
+	<div class="modal fade" id="modalAddNewRecord">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button class="close" data-dismiss="modal">
+						&times;
+					</button>
+					<h4 class="modal-title">Добавить новую запись</h4>
+
+				</div>
+				<div class="modal-body">
+
+					<form id="frmNewDomain">
+							<div class="form-group">
+								<label for="domainName">Введите имя домена</label>
+								<input class="form-control" id="domainName" placeholder="Имя домена" data-required="true" onfocus="this.style = 'background: #fff;'">
+							</div>
+							<div class="form-group">
+								<label for="paymentDate">Дата след. оплаты</label>
+								<input class="form-control" id="paymentDate" value="01-01-2000" data-date="dd-mm-yyyy" data-required="true" onfocus="this.style = 'background: #fff;'">
+								<span class="add-on"><i class="icon-calendar"></i></span>
+								
+								<!-- заполняем поле текущей датой -->
+								<script>
+									var currentDate = new Date();
+									var strDate = "";
+									var inputDate = document.getElementById("paymentDate");
+									if (currentDate.getDate() < 10) strDate += "0";
+									strDate += currentDate.getDate() + "-";
+
+									if (currentDate.getMonth() < 10) strDate += "0";
+									strDate += (currentDate.getMonth()+1) + "-"; // Месяц в JS начинается с 0
+									strDate += currentDate.getFullYear();
+									paymentDate.value = strDate;
+								</script>
+
+							</div>
+							<div class="form-group">
+								<label for="price">Цена (сумма)</label>
+								<input class="form-control" id="price" placeholder="Цена" data-required="true" onfocus="this.style = 'background: #fff;'">
+							</div>							
+							<div class="form-group">
+								<label for="currency">Укажите валюту, в которой производятся расчеты</label>
+								<select id="currency" class="form-control">
+									<option>Рубли (RUB)</option>
+									<option>Доллары (USD)</option>
+									<option>Евро (EUR)</option>
+								</select>
+								<!--
+								<input class="form-control" id="currency" placeholder="Валюта" data-required="true" onfocus="this.style = 'background: #fff;'">
+								-->
+							</div>
+							<div class="form-group">
+								<label for="service">Обслуживающий сервис (Название регистратора домена)</label>
+								<input class="form-control" id="service" placeholder="Обслуживающий сервис" data-required="true" onfocus="this.style = 'background: #fff;'">
+							</div>
+							<div class="form-group">
+								<label for="comment">Комментарий</label>
+								<input class="form-control" id="comment" placeholder="Комментарий">
+							</div>
+
+					</form>	
+
+				</div>
+				<div class="modal-footer">
+					<button class="btn btn-success" onclick="{if (validateForm(document.getElementById('frmNewDomain'))) addNewRecord();}" >Создать</button>
+					<button class="btn btn-danger" data-dismiss="modal">Закрыть</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+
+	<!-- +++++++++++++++++++++++++++++++++++++++++++++ ОКНО РЕДАКТИРОВАНИЯ СУЩЕСТВУЮЩЕЙ ЗАПИСИ +++++++++++++++++++++++++++++++++++++++++ -->
+	
+	<div class="modal fade" id="modalEditExistingRecord">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button class="close" data-dismiss="modal">
+						&times;
+					</button>
+					<h4 class="modal-title">Редактировать существующую запись</h4>
+
+				</div>
+				<div class="modal-body">
+					
+					<form id="frmEditDomain">
+							<div class="form-group">
+								<label for="domainNameEd">Введите имя домена</label>
+								<input class="form-control" id="domainNameEd" placeholder="Имя домена" data-required="true" onfocus="this.style = 'background: #fff;'">
+							</div>
+							<div class="form-group">
+								<label for="paymentDateEd">Дата след. оплаты</label>
+								<input class="form-control" id="paymentDateEd" value="01-01-2000" data-date="dd-mm-yyyy" data-required="true" onfocus="this.style = 'background: #fff;'">
+								<span class="add-on"><i class="icon-calendar"></i></span>
+								
+							</div>
+							<div class="form-group">
+								<label for="priceEd">Цена (сумма)</label>
+								<input class="form-control" id="priceEd" placeholder="Цена" data-required="true" onfocus="this.style = 'background: #fff;'">
+							</div>							
+							<div class="form-group">
+								<label for="currencyEd">Укажите валюту, в которой производятся расчеты</label>
+								<select id="currencyEd" class="form-control">
+									<option>Рубли (RUB)</option>
+									<option>Доллары (USD)</option>
+									<option>Евро (EUR)</option>
+								</select>
+							</div>
+							<div class="form-group">
+								<label for="serviceEd">Обслуживающий сервис (Название регистратора домена)</label>
+								<input class="form-control" id="serviceEd" placeholder="Обслуживающий сервис" data-required="true" onfocus="this.style = 'background: #fff;'">
+							</div>
+							<div class="form-group">
+								<label for="commentEd">Комментарий</label>
+								<input class="form-control" id="commentEd" placeholder="Комментарий">
+							</div>
+
+
+					</form>	
+
+
+				</div>
+				<div class="modal-footer">
+
+					<button class="btn btn-success">Создать</button>
+					<button class="btn btn-danger" data-dismiss="modal">Закрыть</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<script>
+		$("#modalEditExistingRecord").on("show", function () {
+			console.log("SHOW must go on!");
+		});
+	</script>
+
+
+	<!-- +++++++++++++ Основной контент страницы +++++++++++++ -->
+	<div class="container">
+		<div class="row text-center">
+		<form>
+			<button class="btn btn-info" onclick="{ loadJSON(); return false; }">Домены</button>
+			<button class="btn btn-info" onclick="{ loadJSON(); return false; }">Рассыльщики InTouch</button>
+			<button class="btn btn-info" onclick="{ loadJSON(); return false; }">Платежные модули WHMCS</button>
+			<button class="btn btn-info" onclick="{ loadJSON(); return false; }">Прочее</button> 
+		</form>
+		<!-- Здесь идет блок с информацией, сведенной в таблицу -->
+		<section id="mainInfo">
+			<p>No data yet</p>
+		</section>
+		<!-- Далее идет панель с кнопками для управления сервисом -->
+		<section id="managmentPanel">
+			<button class="btn btn-primary" data-toggle="modal" data-target="#modalAddNewRecord">Создать запись</button>
+			<!-- <button class="btn btn-primary" onclick="{ $('#modalEmptyFormForDomain').toggle(); console.log('click');}">Создать запись</button>  -->
+		</section>
+		</div> <!-- row.. -->
+	</div>
+
+
+    <script>
+
+    	$(document).ready(function() {
+
+    			$("#paymentDate").click(function(e) {
+    				// e.preventDefault();
+    				$("#paymentDate").datepicker({format: "dd-mm-yyyy"});
+    			});
+    		
+    			$(".btn.btn-info.smallButton").click(function() {
+    				console.log(".smallButton");
+    			});
+    	});
+    </script>
+</body>
+</html>
